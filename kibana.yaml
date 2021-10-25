@@ -1,0 +1,53 @@
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: kibana
+spec:
+  version: 7.8.1
+  count: 1
+  elasticsearchRef:
+    name: elasticsearch
+  ## Uncomment below if you would like to expose the Kibana ervice with a LoadBalancer instead of ingress
+  #http:
+  #  service:
+  #    spec:
+  #      type: LoadBalancer
+  podTemplate:
+    metadata:
+      labels:
+        app: kibana
+    spec:
+      containers:
+      - name: kibana
+        resources:
+          limits:
+            memory: 1Gi
+            cpu: 1
+          requests:
+            memory: 1Gi
+            cpu: 1
+---
+# This sample sets up an ingress for exposing Kibana service externally.
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    # Add annotation to use the built-in nginx ingress controller
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+    # Add annotation to use cert-manager for generating and maintaining the cert for kibana ingress
+    cert-manager.io/cluster-issuer: "letsencrypt-http"
+  name: kibana-ingress
+spec:
+  rules:
+  - host: kibana.infra.gorafay.net
+    http:
+      paths:
+      - backend:
+          serviceName: kibana-kb-http
+          servicePort: 5601
+        path: /
+  tls:
+  - hosts:
+    - kibana.infra.gorafay.net
+    secretName: kibana-ingress-tls
